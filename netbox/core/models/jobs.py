@@ -133,6 +133,10 @@ class Job(models.Model):
 
         return f"{int(minutes)} minutes, {seconds:.2f} seconds"
 
+    @property
+    def connection(self):
+        return django_rq.get_connection('default')
+
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
 

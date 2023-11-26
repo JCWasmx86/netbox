@@ -200,7 +200,17 @@ class Report(object):
         self._results[self.active_test]['failure'] += 1
         self.logger.info(f"Failure | {obj}: {message}")
         self.failed = True
-
+        
+    def log_progress(self, msg, current, needed):
+        assert current <= needed
+        if needed == 0:
+            percentage = 1.0
+        else:
+            percentage = float(current) / float(needed)
+        
+        conn = self.__job.connection
+        conn.set(f"{self.__job}_{self.active_test}_progress", percentage * 100.0)
+        conn.set(f"{self.__job}_{self.active_test}_progress_message", msg)
     #
     # Run methods
     #
@@ -213,10 +223,14 @@ class Report(object):
 
         # Perform any post-run tasks
         self.pre_run()
+        
+        self.__job = job
 
         try:
             for method_name in self.test_methods:
                 self.active_test = method_name
+                conn = job.connection
+                conn.set(f"{job}_active_test", self.active_test)
                 test_method = getattr(self, method_name)
                 test_method()
             job.data = self._results

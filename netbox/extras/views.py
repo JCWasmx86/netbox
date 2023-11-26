@@ -1,3 +1,5 @@
+import django_rq
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -1107,9 +1109,28 @@ class ReportResultView(ContentTypePermissionRequiredMixin, View):
 
         # If this is an HTMX request, return only the result HTML
         if is_htmx(request):
+            conn = django_rq.get_connection('default')
+            active_test = conn.get(f'{job}_active_test')
+
+            if active_test:
+                active_test = active_test.decode('utf-8')
+                active_progress = conn.get(f'{job}_{active_test}_progress')
+                if active_progress:
+                    active_progress = float(active_progress.decode('utf-8'))
+                active_progress_message = conn.get(f'{job}_{active_test}_progress_message')
+                if active_progress_message:
+                    active_progress_message = active_progress_message.decode('utf-8')
+            else:
+                active_progress = None
+                active_progress_message = None
+
             response = render(request, 'extras/htmx/report_result.html', {
                 'report': report,
                 'job': job,
+                'emit_progress': active_test is not None and active_progress is not None,
+                'active_test': active_test,
+                'active_progress': active_progress,
+                'active_progress_message': active_progress_message,
             })
             if job.completed or not job.started:
                 response.status_code = 286

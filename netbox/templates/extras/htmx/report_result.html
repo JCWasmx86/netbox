@@ -77,5 +77,15 @@
     </div>
   </div>
 {% elif job.started %}
-  {% include 'extras/inc/result_pending.html' %}
+  {% if emit_progress %}
+    {% if active_progress_message %}
+        <p><code>{{ active_test }}</code>: {{ active_progress_message }}</p>
+    {% endif %}
+
+    <div class="progress">
+        <div class="progress-bar" role="progressbar" style="width: {{ active_progress }}%;" aria-valuenow="{{ active_progress }}" aria-valuemin="0" aria-valuemax="100">{{ active_progress|floatformat:2 }}%</div>
+    </div>
+  {% else %}
+    {% include 'extras/inc/result_pending.html' %}
+  {% endif %}
 {% endif %}
